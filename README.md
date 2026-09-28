@@ -58,7 +58,12 @@ ai-network-compliance/
 | Real Compliance Engine | NOT IMPLEMENTED |
 | Real Remediation | NOT IMPLEMENTED |
 
-## Getting Started (Frontend)
+## Deployment
+
+The web application lives in **`/frontend`** (Next.js + TypeScript). This is a
+monorepo, so Vercel must treat `/frontend` as the project root.
+
+### Local Frontend Development
 
 ```bash
 cd frontend
@@ -67,3 +72,34 @@ npm run dev
 ```
 
 Open http://localhost:3000
+
+### Production Test
+
+```bash
+cd frontend
+npm install
+npm run build
+npm run start
+```
+
+Then open http://localhost:3000
+
+### Vercel Deployment
+
+The Vercel project must use:
+
+| Setting | Value |
+|---------|-------|
+| Root Directory | `frontend` |
+| Framework Preset | Next.js |
+| Build Command | `npm run build` |
+| Install Command | `npm install` |
+| Output Directory | (leave default — Next.js managed) |
+
+Setting the **Root Directory** to `frontend` is what resolves the `404: NOT_FOUND`
+deployment: the app is not at the repo root, so Vercel must be pointed at it. The
+deployment then uses the Next.js output automatically — no `vercel.json` or custom
+output directory required. See [docs/deployment.md](./docs/deployment.md) for details.
+
+> The frontend does not currently read any environment variables, so no
+> `.env.example` is required. Add one only when real variables are introduced.
