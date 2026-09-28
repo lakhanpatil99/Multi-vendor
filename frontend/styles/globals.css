@@ -1,0 +1,137 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * ANCP Design Tokens
+ * Direction: enterprise cybersecurity — deep navy / near-black surfaces,
+ * restrained blue/cyan accents, emerald success, amber warning, red critical.
+ * Dark theme is the product default. Values are HSL channels (h s l) consumed
+ * by Tailwind via hsl(var(--token)).
+ */
+
+:root {
+  /* Base surfaces (dark is the default identity) */
+  --background: 222 47% 6%;         /* near-black navy */
+  --foreground: 210 40% 96%;
+
+  --surface: 221 42% 9%;            /* deep navy panel */
+  --surface-raised: 220 39% 12%;    /* raised card */
+  --surface-overlay: 220 38% 15%;   /* menus / popovers */
+
+  --card: 221 42% 9%;
+  --card-foreground: 210 40% 96%;
+
+  --popover: 220 38% 13%;
+  --popover-foreground: 210 40% 96%;
+
+  --primary: 199 89% 52%;           /* cyan/blue accent */
+  --primary-foreground: 222 47% 6%;
+
+  --secondary: 217 33% 18%;
+  --secondary-foreground: 210 40% 96%;
+
+  --muted: 217 33% 16%;
+  --muted-foreground: 215 20% 62%;
+
+  --accent: 199 89% 52%;
+  --accent-foreground: 222 47% 6%;
+
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 217 33% 20%;
+  --input: 217 33% 20%;
+  --ring: 199 89% 52%;
+
+  /* Semantic security scale */
+  --critical: 0 72% 55%;
+  --high: 22 90% 56%;
+  --medium: 38 92% 55%;
+  --low: 199 89% 52%;
+  --info: 215 20% 65%;
+  --success: 152 62% 44%;
+  --warning: 38 92% 55%;
+
+  --radius: 0.6rem;
+
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, monospace;
+}
+
+/* Optional light theme (product ships dark by default, but tokens exist) */
+.light {
+  --background: 210 40% 98%;
+  --foreground: 222 47% 11%;
+  --surface: 0 0% 100%;
+  --surface-raised: 210 40% 99%;
+  --surface-overlay: 0 0% 100%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+  --secondary: 210 40% 94%;
+  --secondary-foreground: 222 47% 11%;
+  --muted: 210 40% 94%;
+  --muted-foreground: 215 16% 40%;
+  --border: 214 32% 88%;
+  --input: 214 32% 88%;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Subtle textured background for the app shell */
+.app-bg {
+  background-image:
+    radial-gradient(60rem 60rem at 100% -10%, hsl(199 89% 52% / 0.06), transparent 55%),
+    radial-gradient(50rem 50rem at -10% 0%, hsl(221 70% 40% / 0.08), transparent 50%);
+  background-attachment: fixed;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(215 20% 40%);
+  background-clip: content-box;
+}
+
+/* Monospace config surface */
+.config-surface {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.5rem;
+  tab-size: 2;
+}
+
+.grid-lines {
+  background-image:
+    linear-gradient(to right, hsl(var(--border) / 0.4) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(var(--border) / 0.4) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
