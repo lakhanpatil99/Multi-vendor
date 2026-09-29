@@ -34,6 +34,13 @@ dist/
 build/
 coverage/
 .cache/
+.pytest_cache/
+
+# Backend runtime artifacts (SQLite DB, local storage) — never commit
+var/
+**/var/
+*.db
+*.sqlite3
 
 # Logs
 *.log

@@ -13,8 +13,8 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn, timeAgo } from "@/lib/utils";
-import { MOCK_NOTIFICATIONS } from "@/mock";
-import type { NotificationKind } from "@/types";
+import { services } from "@/services";
+import type { AppNotification, NotificationKind } from "@/types";
 
 const KIND_ICON: Record<NotificationKind, LucideIcon> = {
   CRITICAL_FINDING: ShieldAlert,
@@ -36,23 +36,41 @@ const KIND_TONE: Record<NotificationKind, string> = {
 
 export function Notifications() {
   const [open, setOpen] = React.useState(false);
+  const [items, setItems] = React.useState<AppNotification[]>([]);
+  const [loaded, setLoaded] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
-  const unread = MOCK_NOTIFICATIONS.filter((n) => !n.read).length;
+
+  const load = React.useCallback(async () => {
+    try {
+      setItems(await services.audit.notifications());
+    } catch {
+      setItems([]);
+    } finally {
+      setLoaded(true);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    load();
+  }, [load]);
 
   React.useEffect(() => {
     function onClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
+  const unread = items.filter((n) => !n.read).length;
+
   return (
     <div className="relative" ref={ref}>
       <button
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          setOpen((o) => !o);
+          if (!loaded) load();
+        }}
         className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface text-muted-foreground hover:text-foreground"
         aria-label="Notifications"
       >
@@ -71,7 +89,12 @@ export function Notifications() {
             <span className="text-xs text-muted-foreground">{unread} unread</span>
           </div>
           <div className="max-h-96 overflow-y-auto">
-            {MOCK_NOTIFICATIONS.map((n) => {
+            {items.length === 0 && (
+              <p className="px-4 py-6 text-center text-sm text-muted-foreground">
+                {loaded ? "No recent activity." : "Loading…"}
+              </p>
+            )}
+            {items.map((n) => {
               const Icon = KIND_ICON[n.kind];
               return (
                 <Link
@@ -86,9 +109,7 @@ export function Notifications() {
                   <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", KIND_TONE[n.kind])} />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium">{n.title}</p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {n.message}
-                    </p>
+                    <p className="truncate text-xs text-muted-foreground">{n.message}</p>
                     <p className="mt-0.5 text-[10px] text-muted-foreground/70">
                       {timeAgo(n.timestamp)}
                     </p>

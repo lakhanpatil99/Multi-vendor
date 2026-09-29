@@ -9,7 +9,7 @@ import { PATTERN_STATUS_META } from "@/constants/domain";
 import { PageHeader } from "@/components/shared/page-header";
 import { VendorBadge, CategoryBadge } from "@/components/shared/badges";
 import { AIConfidence } from "@/components/shared/ai-confidence";
-import { EmptyState, LoadingState } from "@/components/shared/states";
+import { EmptyState, ErrorState, LoadingState } from "@/components/shared/states";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,13 +23,24 @@ import {
 import type { PatternStatus } from "@/types";
 
 export default function LearnedPatternsPage() {
-  const { data: patterns, loading } = useAsync(() => services.training.list(), []);
+  const { data: patterns, loading, error, reload } = useAsync(
+    () => services.training.list(),
+    []
+  );
 
-  if (loading || !patterns) {
+  if (loading) {
     return (
       <>
         <PageHeader title="Learned Patterns" icon={Cpu} />
         <LoadingState />
+      </>
+    );
+  }
+  if (error || !patterns) {
+    return (
+      <>
+        <PageHeader title="Learned Patterns" icon={Cpu} />
+        <ErrorState description={error ?? "Failed to load learned patterns."} onRetry={reload} />
       </>
     );
   }

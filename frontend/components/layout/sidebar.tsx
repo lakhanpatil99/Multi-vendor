@@ -102,8 +102,8 @@ export function Sidebar({
 
         <div className="border-t border-border px-4 py-3">
           <div className="rounded-lg border border-border bg-surface-overlay/60 p-2.5 text-[11px] text-muted-foreground">
-            <span className="font-medium text-foreground">Phase 1 Prototype</span>
-            <p className="mt-0.5">Mock services · no live backend</p>
+            <span className="font-medium text-foreground">ANCP</span>
+            <p className="mt-0.5">AI Network Compliance Platform</p>
           </div>
         </div>
       </aside>

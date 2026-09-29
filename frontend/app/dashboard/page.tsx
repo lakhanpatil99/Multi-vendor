@@ -17,20 +17,15 @@ import {
 } from "lucide-react";
 import { services } from "@/services";
 import { useAsync } from "@/hooks/use-async";
-import {
-  MOCK_DASHBOARD_METRICS,
-  MOCK_RISK_DISTRIBUTION,
-  MOCK_VENDOR_DISTRIBUTION,
-  MOCK_KNOWLEDGE_QUEUE,
-} from "@/mock";
-import { SEVERITY_TOKENS, scoreTone } from "@/constants/severity";
+import { getVendor } from "@/mock/vendors";
+import { SEVERITY_ORDER, SEVERITY_TOKENS, scoreTone } from "@/constants/severity";
 import { CONTROL_CATEGORY_META, FRAMEWORK_META } from "@/constants/domain";
 import { PageHeader } from "@/components/shared/page-header";
 import { MetricCard } from "@/components/shared/metric-card";
 import { ChartCard } from "@/components/shared/chart-card";
 import { ComplianceScore } from "@/components/shared/compliance-score";
 import { FrameworkBadge } from "@/components/shared/badges";
-import { LoadingState } from "@/components/shared/states";
+import { LoadingState, ErrorState } from "@/components/shared/states";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -41,14 +36,22 @@ import {
   FrameworkRadar,
 } from "@/components/charts/charts";
 
-export default function DashboardPage() {
-  const m = MOCK_DASHBOARD_METRICS;
-  const { data: overview, loading } = useAsync(
-    () => services.compliance.overview(),
-    []
-  );
+/** Aggregate real backend data for the dashboard (no mock values). */
+async function loadDashboard() {
+  const [overview, devices, findings, configs, queue] = await Promise.all([
+    services.compliance.overview(),
+    services.devices.list(),
+    services.findings.list(),
+    services.configurations.list(),
+    services.training.queueSummary(),
+  ]);
+  return { overview, devices, findings, configs, queue };
+}
 
-  if (loading || !overview) {
+export default function DashboardPage() {
+  const { data, loading, error, reload } = useAsync(loadDashboard, []);
+
+  if (loading) {
     return (
       <>
         <PageHeader
@@ -60,21 +63,44 @@ export default function DashboardPage() {
       </>
     );
   }
+  if (error || !data) {
+    return (
+      <>
+        <PageHeader title="Compliance Dashboard" icon={Activity} />
+        <ErrorState description={error ?? "Failed to load dashboard."} onRetry={reload} />
+      </>
+    );
+  }
 
-  const riskData = MOCK_RISK_DISTRIBUTION.map((r) => ({
-    name: SEVERITY_TOKENS[r.severity].label,
-    value: r.count,
-    hex: SEVERITY_TOKENS[r.severity].hex,
+  const { overview, devices, findings, configs, queue } = data;
+
+  const m = {
+    devicesAnalyzed: devices.length,
+    configurationsProcessed: configs.length,
+    overallCompliance: overview.overallScore,
+    criticalFindings: findings.filter((f) => f.severity === "CRITICAL").length,
+    highFindings: findings.filter((f) => f.severity === "HIGH").length,
+    unknownPatterns: queue.unknownPatterns,
+  };
+
+  const riskData = SEVERITY_ORDER.map((sev) => ({
+    name: SEVERITY_TOKENS[sev].label,
+    value: findings.filter((f) => f.severity === sev).length,
+    hex: SEVERITY_TOKENS[sev].hex,
+  })).filter((r) => r.value > 0);
+
+  const vendorCounts = new Map<string, number>();
+  for (const d of devices) vendorCounts.set(d.vendorId, (vendorCounts.get(d.vendorId) ?? 0) + 1);
+  const vendorData = Array.from(vendorCounts.entries()).map(([vid, count]) => ({
+    name: getVendor(vid)?.name ?? vid,
+    value: count,
+    hex: getVendor(vid)?.accent ?? "#8b97a7",
   }));
-  const vendorData = MOCK_VENDOR_DISTRIBUTION.map((v) => ({
-    name: v.vendor,
-    value: v.devices,
-    hex: v.hex,
-  }));
+
   const categoryData = overview.categories.map((c) => ({
-    name: CONTROL_CATEGORY_META[c.category].short,
+    name: CONTROL_CATEGORY_META[c.category]?.short ?? c.category,
     value: c.score,
-    hex: CONTROL_CATEGORY_META[c.category].hex,
+    hex: CONTROL_CATEGORY_META[c.category]?.hex ?? "#8b97a7",
   }));
   const frameworkRadar = overview.frameworks.map((f) => ({
     framework: f.shortName,
@@ -172,15 +198,13 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <p className="text-3xl font-semibold">
-                {MOCK_KNOWLEDGE_QUEUE.unknownPatterns}
-              </p>
+              <p className="text-3xl font-semibold">{queue.unknownPatterns}</p>
               <p className="text-xs text-muted-foreground">Unknown Patterns</p>
             </div>
             <div className="grid grid-cols-3 gap-2 text-center">
-              <QueueStat value={MOCK_KNOWLEDGE_QUEUE.pendingReview} label="Pending" tone="text-high" />
-              <QueueStat value={MOCK_KNOWLEDGE_QUEUE.learnedToday} label="Learned" tone="text-success" />
-              <QueueStat value={MOCK_KNOWLEDGE_QUEUE.rejectedToday} label="Rejected" tone="text-muted-foreground" />
+              <QueueStat value={queue.pendingReview} label="Pending" tone="text-high" />
+              <QueueStat value={queue.learnedToday} label="Learned" tone="text-success" />
+              <QueueStat value={queue.rejectedToday} label="Rejected" tone="text-muted-foreground" />
             </div>
             <Link href="/training" className="block">
               <Button className="w-full" variant="outline">

@@ -8,7 +8,7 @@ import { useAsync } from "@/hooks/use-async";
 import { FRAMEWORK_META } from "@/constants/domain";
 import { PageHeader } from "@/components/shared/page-header";
 import { FrameworkBadge, SeverityBadge, CategoryBadge } from "@/components/shared/badges";
-import { LoadingState } from "@/components/shared/states";
+import { LoadingState, ErrorState } from "@/components/shared/states";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -17,16 +17,24 @@ import { Button } from "@/components/ui/button";
  * controls. Each finding expands to show its CIS/NIST/STIG/ISO references.
  */
 export default function FrameworksPage() {
-  const { data: findings, loading } = useAsync(
+  const { data: findings, loading, error, reload } = useAsync(
     () => services.findings.list({ status: "FAIL" }),
     []
   );
 
-  if (loading || !findings) {
+  if (loading) {
     return (
       <>
         <PageHeader title="Framework Mapping" icon={GitCompareArrows} />
         <LoadingState />
+      </>
+    );
+  }
+  if (error || !findings) {
+    return (
+      <>
+        <PageHeader title="Framework Mapping" icon={GitCompareArrows} />
+        <ErrorState description={error ?? "Failed to load framework mappings."} onRetry={reload} />
       </>
     );
   }

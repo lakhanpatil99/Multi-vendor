@@ -1,17 +1,18 @@
 /**
- * Service registry — the single place where concrete service implementations
- * are bound. In Phase 1 every service is a Mock*Service. In Phase 3 these are
- * replaced with Api*Service implementations of the SAME interfaces, and no UI
- * or hook code needs to change.
+ * Service registry — bound to the real API implementations (Phase 3).
+ *
+ * Every service talks to FastAPI via lib/api/client.ts. There is no mock
+ * fallback: API failures surface as errors so integration issues are visible.
+ * The UI/hook layer is unchanged — it depends only on the service interfaces.
  */
-import { MockDeviceService } from "./devices/mock";
-import { MockConfigurationService } from "./configurations/mock";
-import { MockComplianceService } from "./compliance/mock";
-import { MockFindingService } from "./findings/mock";
-import { MockTrainingService } from "./training/mock";
-import { MockRemediationService } from "./remediation/mock";
-import { MockReportService } from "./reports/mock";
-import { MockAuditService } from "./audit/mock";
+import { ApiDeviceService } from "./devices/api";
+import { ApiConfigurationService } from "./configurations/api";
+import { ApiComplianceService } from "./compliance/api";
+import { ApiFindingService } from "./findings/api";
+import { ApiTrainingService } from "./training/api";
+import { ApiRemediationService } from "./remediation/api";
+import { ApiReportService } from "./reports/api";
+import { ApiAuditService } from "./audit/api";
 
 import type { DeviceService } from "./devices/interface";
 import type { ConfigurationService } from "./configurations/interface";
@@ -34,14 +35,14 @@ export interface ServiceRegistry {
 }
 
 export const services: ServiceRegistry = {
-  devices: new MockDeviceService(),
-  configurations: new MockConfigurationService(),
-  compliance: new MockComplianceService(),
-  findings: new MockFindingService(),
-  training: new MockTrainingService(),
-  remediation: new MockRemediationService(),
-  reports: new MockReportService(),
-  audit: new MockAuditService(),
+  devices: new ApiDeviceService(),
+  configurations: new ApiConfigurationService(),
+  compliance: new ApiComplianceService(),
+  findings: new ApiFindingService(),
+  training: new ApiTrainingService(),
+  remediation: new ApiRemediationService(),
+  reports: new ApiReportService(),
+  audit: new ApiAuditService(),
 };
 
 export type { DeviceService } from "./devices/interface";

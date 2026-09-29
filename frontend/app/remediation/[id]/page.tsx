@@ -74,9 +74,10 @@ export default function RemediationDetailPage() {
       <div className="flex items-start gap-2 rounded-lg border border-medium/30 bg-medium/5 p-3 text-sm">
         <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-medium" />
         <p className="text-muted-foreground">
-          <b className="text-foreground">Simulated commands.</b> ANCP never
-          executes remediation in Phase 1. Approval is recorded conceptually to
-          demonstrate the human-in-the-loop workflow.
+          <b className="text-foreground">Review only.</b> Command execution is
+          disabled — these are the backend-generated remediation commands.
+          Approving records the decision in the audit trail without running
+          anything on the device.
           {data.disruptive && (
             <span className="text-high">
               {" "}
@@ -109,7 +110,7 @@ export default function RemediationDetailPage() {
         <CardContent>
           <div className="overflow-hidden rounded-lg border border-border bg-[hsl(222_47%_5%)]">
             <div className="border-b border-border px-3 py-1.5 text-xs text-muted-foreground">
-              simulated · not executed
+              review only · not executed
             </div>
             <pre className="config-surface overflow-auto p-3">
               {data.fixCommands.map((c, i) => (

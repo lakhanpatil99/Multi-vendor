@@ -10,7 +10,7 @@ import { scoreTone } from "@/constants/severity";
 import { PageHeader } from "@/components/shared/page-header";
 import { FilterBar } from "@/components/shared/filter-bar";
 import { RiskBadge, VendorBadge } from "@/components/shared/badges";
-import { EmptyState, LoadingState } from "@/components/shared/states";
+import { EmptyState, ErrorState, LoadingState } from "@/components/shared/states";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
@@ -37,7 +37,7 @@ export default function DevicesPage() {
   const [status, setStatus] = React.useState("all");
   const [search, setSearch] = React.useState("");
 
-  const { data: devices, loading } = useAsync(
+  const { data: devices, loading, error, reload } = useAsync(
     () => services.devices.list({ vendorId: vendor, status, search }),
     [vendor, status, search]
   );
@@ -77,6 +77,8 @@ export default function DevicesPage() {
 
       {loading ? (
         <LoadingState />
+      ) : error ? (
+        <ErrorState description={error} onRetry={reload} />
       ) : !devices || devices.length === 0 ? (
         <EmptyState
           icon={Network}

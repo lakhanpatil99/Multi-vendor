@@ -5,11 +5,14 @@ import { services } from "@/services";
 import { useAsync } from "@/hooks/use-async";
 import { PageHeader } from "@/components/shared/page-header";
 import { AuditTimeline } from "@/components/shared/audit-timeline";
-import { EmptyState, LoadingState } from "@/components/shared/states";
+import { EmptyState, ErrorState, LoadingState } from "@/components/shared/states";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function AuditPage() {
-  const { data: events, loading } = useAsync(() => services.audit.events(), []);
+  const { data: events, loading, error, reload } = useAsync(
+    () => services.audit.events(),
+    []
+  );
 
   return (
     <>
@@ -22,6 +25,8 @@ export default function AuditPage() {
 
       {loading ? (
         <LoadingState />
+      ) : error ? (
+        <ErrorState description={error} onRetry={reload} />
       ) : !events || events.length === 0 ? (
         <EmptyState
           icon={ScrollText}

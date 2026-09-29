@@ -16,7 +16,6 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { services } from "@/services";
 import { useAsync } from "@/hooks/use-async";
-import { MOCK_AUDIT_EVENTS } from "@/mock";
 import { formatDateTime } from "@/lib/utils";
 import { scoreTone } from "@/constants/severity";
 import { PageHeader } from "@/components/shared/page-header";
@@ -58,6 +57,7 @@ export default function DeviceDetailPage() {
     [id]
   );
   const { data: remediations } = useAsync(() => services.remediation.list(), []);
+  const { data: auditAll } = useAsync(() => services.audit.events(), []);
 
   if (loading) return <InlineLoading label="Loading device…" />;
   if (!device)
@@ -78,7 +78,17 @@ export default function DeviceDetailPage() {
   const deviceRemediations = (remediations ?? []).filter(
     (r) => r.deviceId === id
   );
-  const auditEvents = MOCK_AUDIT_EVENTS.filter((e) => e.deviceId === id);
+  const auditEvents = (auditAll ?? []).filter((e) => e.deviceId === id);
+  // Derive accurate finding rollups from the real findings query (the device
+  // DTO carries no per-status counts).
+  const fList = findings ?? [];
+  const derived = {
+    critical: fList.filter((f) => f.severity === "CRITICAL").length,
+    high: fList.filter((f) => f.severity === "HIGH").length,
+    fail: fList.filter((f) => f.status === "FAIL").length,
+    pass: fList.filter((f) => f.status === "PASS").length,
+    unknown: fList.filter((f) => f.status === "UNKNOWN").length,
+  };
 
   return (
     <>
@@ -150,10 +160,10 @@ export default function DeviceDetailPage() {
                 <CardTitle className="text-sm">Findings Summary</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-2 gap-3">
-                <SummaryBox label="Critical" value={device.criticalFindings} tone="#e5484d" />
-                <SummaryBox label="High" value={device.highFindings} tone="#f2680c" />
-                <SummaryBox label="Pass" value={device.findingsSummary.pass} tone="#2bb673" />
-                <SummaryBox label="Fail" value={device.findingsSummary.fail} tone="#e5484d" />
+                <SummaryBox label="Critical" value={derived.critical} tone="#e5484d" />
+                <SummaryBox label="High" value={derived.high} tone="#f2680c" />
+                <SummaryBox label="Findings" value={fList.length} tone="#1ba3ec" />
+                <SummaryBox label="Fail" value={derived.fail} tone="#e5484d" />
               </CardContent>
             </Card>
             <Card>

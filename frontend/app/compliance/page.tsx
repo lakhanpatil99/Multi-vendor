@@ -10,19 +10,30 @@ import { PageHeader } from "@/components/shared/page-header";
 import { ComplianceScore } from "@/components/shared/compliance-score";
 import { ChartCard } from "@/components/shared/chart-card";
 import { FrameworkBadge } from "@/components/shared/badges";
-import { LoadingState } from "@/components/shared/states";
+import { LoadingState, ErrorState } from "@/components/shared/states";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { VBarChart } from "@/components/charts/charts";
 
 export default function CompliancePage() {
-  const { data, loading } = useAsync(() => services.compliance.overview(), []);
+  const { data, loading, error, reload } = useAsync(
+    () => services.compliance.overview(),
+    []
+  );
 
-  if (loading || !data) {
+  if (loading) {
     return (
       <>
         <PageHeader title="Compliance Overview" icon={ClipboardCheck} />
         <LoadingState />
+      </>
+    );
+  }
+  if (error || !data) {
+    return (
+      <>
+        <PageHeader title="Compliance Overview" icon={ClipboardCheck} />
+        <ErrorState description={error ?? "Failed to load compliance data."} onRetry={reload} />
       </>
     );
   }

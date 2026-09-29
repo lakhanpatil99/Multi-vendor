@@ -10,9 +10,15 @@ import {
   ArrowRight,
   ShieldAlert,
   Lock,
+  AlertTriangle,
 } from "lucide-react";
 import { services } from "@/services";
-import { PRODUCT } from "@/constants/domain";
+import { friendlyMessage } from "@/lib/api/errors";
+import {
+  CISCO_IOS_CONFIG,
+  FORTIOS_CONFIG,
+  JUNIPER_JUNOS_CONFIG,
+} from "@/mock/raw-configs";
 import { PageHeader } from "@/components/shared/page-header";
 import { ProcessingPipeline } from "@/components/shared/processing-pipeline";
 import { Button } from "@/components/ui/button";
@@ -104,22 +110,34 @@ function UploadFlow() {
   const [result, setResult] = React.useState<IngestionResult | null>(null);
   const [fileName, setFileName] = React.useState<string>("");
   const [dragging, setDragging] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
-  async function start(name: string) {
-    setFileName(name);
+  async function start(file: File) {
+    setFileName(file.name);
     setRunning(true);
     setResult(null);
+    setError(null);
     setStages(services.configurations.pipelineTemplate());
-    const res = await services.configurations.simulateIngestion(name, (s) =>
-      setStages(s)
-    );
-    setResult(res);
-    setRunning(false);
+    try {
+      const res = await services.configurations.runIngestion(file, (s) =>
+        setStages(s)
+      );
+      setResult(res);
+    } catch (err) {
+      setError(friendlyMessage(err));
+    } finally {
+      setRunning(false);
+    }
   }
 
   function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
-    if (f) start(f.name);
+    if (f) start(f);
+  }
+
+  function sample(text: string, name: string) {
+    // Sample configs are uploaded to the backend as real files (real ingestion).
+    start(new File([text], name, { type: "text/plain" }));
   }
 
   return (
@@ -139,7 +157,7 @@ function UploadFlow() {
               e.preventDefault();
               setDragging(false);
               const f = e.dataTransfer.files?.[0];
-              if (f) start(f.name);
+              if (f) start(f);
             }}
             className={cn(
               "flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-12 text-center transition-colors",
@@ -148,29 +166,31 @@ function UploadFlow() {
           >
             <UploadCloud className="mb-3 h-8 w-8 text-primary" />
             <p className="text-sm font-medium">Drop a configuration file here</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Supported: .txt · .cfg · .conf
-            </p>
+            <p className="mt-1 text-xs text-muted-foreground">Supported: .txt · .cfg · .conf</p>
             <input
               type="file"
               accept=".txt,.cfg,.conf"
               className="hidden"
               onChange={onFile}
+              disabled={running}
             />
             <span className="mt-4 inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-3 py-1.5 text-xs">
-              <Lock className="h-3.5 w-3.5 text-success" /> Secure upload · secrets masked
+              <Lock className="h-3.5 w-3.5 text-success" /> Secure upload · secrets masked server-side
             </span>
           </label>
 
           <div className="flex flex-wrap gap-2">
-            <p className="w-full text-xs text-muted-foreground">Or try a sample:</p>
-            <Button size="sm" variant="outline" disabled={running} onClick={() => start("CORE-RTR-01-running-config.cfg")}>
+            <p className="w-full text-xs text-muted-foreground">Or upload a sample:</p>
+            <Button size="sm" variant="outline" disabled={running}
+              onClick={() => sample(CISCO_IOS_CONFIG, "cisco-sample.cfg")}>
               Cisco IOS sample
             </Button>
-            <Button size="sm" variant="outline" disabled={running} onClick={() => start("EDGE-FW-JUN-02.conf")}>
+            <Button size="sm" variant="outline" disabled={running}
+              onClick={() => sample(JUNIPER_JUNOS_CONFIG, "juniper-sample.conf")}>
               Juniper sample
             </Button>
-            <Button size="sm" variant="outline" disabled={running} onClick={() => start("PERIM-FGT-03.conf")}>
+            <Button size="sm" variant="outline" disabled={running}
+              onClick={() => sample(FORTIOS_CONFIG, "fortios-sample.conf")}>
               FortiOS sample
             </Button>
           </div>
@@ -184,14 +204,21 @@ function UploadFlow() {
         <CardContent>
           {!stages ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
-              Select a file to start the simulated ingestion pipeline.
+              Select a file to start the backend analysis pipeline.
             </p>
           ) : (
             <>
-              <p className="mb-4 text-xs text-muted-foreground">
-                {fileName}
-              </p>
+              <p className="mb-4 text-xs text-muted-foreground">{fileName}</p>
               <ProcessingPipeline stages={stages} />
+              {error && (
+                <div className="mt-2 flex items-start gap-2 rounded-lg border border-critical/30 bg-critical/5 p-4 text-sm text-critical">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <div>
+                    <p className="font-medium">Analysis failed</p>
+                    <p className="text-xs text-muted-foreground">{error}</p>
+                  </div>
+                </div>
+              )}
               {result && (
                 <div className="mt-2 rounded-lg border border-success/30 bg-success/5 p-4">
                   <div className="mb-2 flex items-center gap-2 text-success">
@@ -232,16 +259,21 @@ function ConnectFlow() {
   async function test() {
     setTesting(true);
     setMsg(null);
-    const res = await services.configurations.simulateConnectionTest({
-      method: "SSH",
-      vendorId,
-      hostname,
-      username,
-      credentialReference: credential,
-      port: Number(port),
-    });
-    setMsg({ ok: res.ok, text: res.message });
-    setTesting(false);
+    try {
+      const res = await services.configurations.connectionTest({
+        method: "SSH",
+        vendorId,
+        hostname,
+        username,
+        credentialReference: credential,
+        port: Number(port),
+      });
+      setMsg({ ok: res.ok, text: res.message });
+    } catch (err) {
+      setMsg({ ok: false, text: friendlyMessage(err) });
+    } finally {
+      setTesting(false);
+    }
   }
 
   return (
@@ -253,10 +285,9 @@ function ConnectFlow() {
         <div className="flex items-start gap-2 rounded-lg border border-medium/30 bg-medium/5 p-3 text-sm">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-medium" />
           <p className="text-muted-foreground">
-            <b className="text-foreground">Prototype / Backend integration pending.</b>{" "}
-            Phase 1 does not open real connections or store credentials. Secure
-            credential handling (vault references, no plaintext at rest) arrives
-            with backend integration in Phase 4.
+            <b className="text-foreground">Prototype / backend integration pending.</b>{" "}
+            The backend does not open real connections or store credentials in this
+            phase. Secure SSH/Netmiko collection arrives in a later phase.
           </p>
         </div>
 
@@ -274,29 +305,16 @@ function ConnectFlow() {
             </Select>
           </Field>
           <Field label="Hostname / IP">
-            <Input
-              value={hostname}
-              onChange={(e) => setHostname(e.target.value)}
-              placeholder="10.20.0.1"
-            />
+            <Input value={hostname} onChange={(e) => setHostname(e.target.value)} placeholder="10.20.0.1" />
           </Field>
           <Field label="Port">
             <Input value={port} onChange={(e) => setPort(e.target.value)} placeholder="22" />
           </Field>
           <Field label="Username">
-            <Input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="netops"
-            />
+            <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="netops" />
           </Field>
           <Field label="Password / Credential Reference">
-            <Input
-              type="password"
-              value={credential}
-              onChange={(e) => setCredential(e.target.value)}
-              placeholder="vault://ssh/netops"
-            />
+            <Input type="password" value={credential} onChange={(e) => setCredential(e.target.value)} placeholder="vault://ssh/netops" />
           </Field>
         </div>
 
@@ -305,9 +323,7 @@ function ConnectFlow() {
             {testing ? "Testing…" : "Test Connection"}
           </Button>
           {msg && (
-            <p className={cn("text-sm", msg.ok ? "text-medium" : "text-critical")}>
-              {msg.text}
-            </p>
+            <p className={cn("text-sm", msg.ok ? "text-medium" : "text-critical")}>{msg.text}</p>
           )}
         </div>
       </CardContent>

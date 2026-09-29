@@ -1,0 +1,18 @@
+# Compliance frameworks (prototype metadata — control IDs in canonical.yaml are
+# illustrative and NOT authoritative compliance certifications).
+- key: CIS
+  name: CIS Benchmarks
+  version: v8.1
+  description: Center for Internet Security configuration benchmarks.
+- key: NIST
+  name: NIST SP 800-53
+  version: Rev.5
+  description: US federal security & privacy control catalog.
+- key: STIG
+  name: DISA STIG
+  version: 2026-Q2
+  description: Defense Information Systems Agency hardening guides.
+- key: ISO
+  name: ISO/IEC 27001
+  version: "2022"
+  description: International information security management standard.

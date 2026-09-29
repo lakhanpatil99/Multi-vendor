@@ -7,7 +7,7 @@ import { useAsync } from "@/hooks/use-async";
 import { formatDateTime } from "@/lib/utils";
 import { PageHeader } from "@/components/shared/page-header";
 import { VendorBadge } from "@/components/shared/badges";
-import { EmptyState, LoadingState } from "@/components/shared/states";
+import { EmptyState, ErrorState, LoadingState } from "@/components/shared/states";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -21,7 +21,7 @@ import {
 import type { AnalysisStatus, ParserStatus } from "@/types";
 
 export default function ConfigurationsPage() {
-  const { data: configs, loading } = useAsync(
+  const { data: configs, loading, error, reload } = useAsync(
     () => services.configurations.list(),
     []
   );
@@ -44,6 +44,8 @@ export default function ConfigurationsPage() {
 
       {loading ? (
         <LoadingState />
+      ) : error ? (
+        <ErrorState description={error} onRetry={reload} />
       ) : !configs || configs.length === 0 ? (
         <EmptyState
           icon={FileStack}

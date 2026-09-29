@@ -9,19 +9,30 @@ import { PageHeader } from "@/components/shared/page-header";
 import { MetricCard } from "@/components/shared/metric-card";
 import { AIConfidence } from "@/components/shared/ai-confidence";
 import { OriginBadge, CategoryBadge, VendorBadge } from "@/components/shared/badges";
-import { LoadingState } from "@/components/shared/states";
+import { LoadingState, ErrorState } from "@/components/shared/states";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 export default function AIAnalysisPage() {
-  const { data: patterns, loading } = useAsync(() => services.training.list(), []);
+  const { data: patterns, loading, error, reload } = useAsync(
+    () => services.training.list(),
+    []
+  );
   const { data: queue } = useAsync(() => services.training.queueSummary(), []);
 
-  if (loading || !patterns) {
+  if (loading) {
     return (
       <>
         <PageHeader title="AI Analysis" icon={Sparkles} />
         <LoadingState />
+      </>
+    );
+  }
+  if (error || !patterns) {
+    return (
+      <>
+        <PageHeader title="AI Analysis" icon={Sparkles} />
+        <ErrorState description={error ?? "Failed to load AI analysis."} onRetry={reload} />
       </>
     );
   }

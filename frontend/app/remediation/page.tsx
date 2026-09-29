@@ -6,7 +6,7 @@ import { services } from "@/services";
 import { useAsync } from "@/hooks/use-async";
 import { PageHeader } from "@/components/shared/page-header";
 import { SeverityBadge, VendorBadge } from "@/components/shared/badges";
-import { EmptyState, LoadingState } from "@/components/shared/states";
+import { EmptyState, ErrorState, LoadingState } from "@/components/shared/states";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,19 +20,24 @@ import {
 import type { ApprovalState, RemediationStatus } from "@/types";
 
 export default function RemediationCenterPage() {
-  const { data: items, loading } = useAsync(() => services.remediation.list(), []);
+  const { data: items, loading, error, reload } = useAsync(
+    () => services.remediation.list(),
+    []
+  );
 
   return (
     <>
       <PageHeader
         title="Remediation Center"
-        description="Vendor-specific hardening actions for each finding. Phase 1 displays simulated commands only — nothing is ever executed."
+        description="Vendor-specific hardening actions generated for each finding. Commands are for review and approval only — execution is disabled."
         icon={Wrench}
         accent="#f2680c"
       />
 
       {loading ? (
         <LoadingState />
+      ) : error ? (
+        <ErrorState description={error} onRetry={reload} />
       ) : !items || items.length === 0 ? (
         <EmptyState
           icon={Wrench}

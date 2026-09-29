@@ -1,0 +1,219 @@
+# Canonical, declarative compliance rules.
+#
+# Rules are DATA, not code. The evaluator reads `target_field` from the neutral
+# normalized model and applies `operator` against `expected_value`. One canonical
+# rule maps to MANY framework controls (mappings[]). Control IDs are illustrative
+# Phase 1/2 prototype values — not verified certifications.
+#
+# on_missing: result when target_field is absent (PASS | FAIL | N/A | UNKNOWN).
+# Rules that assert "a bad thing is ABSENT" use on_missing: PASS.
+
+- rule_id: TELNET-DISABLED-001
+  title: Telnet Must Be Disabled
+  category: TELNET
+  severity: CRITICAL
+  target_field: remote_access.telnet.enabled
+  operator: is_false
+  expected_value: "false"
+  on_missing: PASS
+  description: Telnet transmits credentials in cleartext; only SSH should be used.
+  security_impact: >-
+    Telnet exposes administrative credentials and session data to on-path
+    attackers. Disable Telnet and use SSHv2 for management.
+  remediation_intent: disable_telnet
+  mappings:
+    - {framework: CIS, control_id: "CIS 1.2.4", control_title: "Disable Telnet / use SSH only"}
+    - {framework: NIST, control_id: "AC-17(2)", control_title: "Remote Access — Encryption"}
+    - {framework: STIG, control_id: "NET0405", control_title: "Insecure management protocol"}
+    - {framework: ISO, control_id: "A.8.20", control_title: "Network security controls"}
+
+- rule_id: SSH-VERSION-001
+  title: SSH Protocol Version 2 Required
+  category: SSH
+  severity: HIGH
+  target_field: remote_access.ssh.version
+  operator: equals
+  expected_value: "2"
+  on_missing: UNKNOWN
+  description: SSHv1 has known cryptographic weaknesses; require SSHv2.
+  security_impact: >-
+    SSHv1 is vulnerable to integrity and man-in-the-middle attacks. Only SSHv2
+    should be permitted for device management.
+  remediation_intent: ssh_v2
+  mappings:
+    - {framework: CIS, control_id: "CIS 1.5.2", control_title: "Set SSH version to 2"}
+    - {framework: NIST, control_id: "SC-8", control_title: "Transmission Confidentiality/Integrity"}
+    - {framework: STIG, control_id: "NET1638", control_title: "SSHv1 must be disabled"}
+    - {framework: ISO, control_id: "A.8.24", control_title: "Use of cryptography"}
+
+- rule_id: SNMP-DEFAULT-001
+  title: No Default SNMP Community Strings
+  category: SNMP
+  severity: CRITICAL
+  target_field: snmp.default_community
+  operator: is_false
+  expected_value: "false"
+  on_missing: PASS
+  description: Default community strings (public/private) must not be configured.
+  security_impact: >-
+    Default SNMP community strings allow trivial reconnaissance and, for
+    read-write, remote reconfiguration of the device.
+  remediation_intent: snmp_v3
+  mappings:
+    - {framework: CIS, control_id: "CIS 2.3.1", control_title: "Use SNMPv3, remove defaults"}
+    - {framework: NIST, control_id: "IA-5", control_title: "Authenticator Management"}
+    - {framework: STIG, control_id: "NET0894", control_title: "Default SNMP community strings"}
+    - {framework: ISO, control_id: "A.5.17", control_title: "Authentication information"}
+
+- rule_id: SNMP-RW-001
+  title: No Read-Write SNMP Community
+  category: SNMP
+  severity: HIGH
+  target_field: snmp.rw_community
+  operator: is_false
+  expected_value: "false"
+  on_missing: PASS
+  description: Read-write SNMP communities permit remote reconfiguration.
+  security_impact: A read-write community enables remote modification of device state.
+  remediation_intent: snmp_v3
+  mappings:
+    - {framework: CIS, control_id: "CIS 2.3.2", control_title: "No RW SNMP"}
+    - {framework: NIST, control_id: "AC-6", control_title: "Least Privilege"}
+    - {framework: STIG, control_id: "NET0897", control_title: "SNMP write access restricted"}
+    - {framework: ISO, control_id: "A.8.2", control_title: "Privileged access rights"}
+
+- rule_id: LOG-BUFFERED-001
+  title: Buffered Logging Enabled
+  category: LOGGING
+  severity: HIGH
+  target_field: logging.buffered.enabled
+  operator: is_true
+  expected_value: "true"
+  on_missing: FAIL
+  description: Local buffered logging must be enabled for an audit trail.
+  security_impact: Without logging there is no audit trail for security events.
+  remediation_intent: enable_logging
+  mappings:
+    - {framework: CIS, control_id: "CIS 3.1.1", control_title: "Enable logging"}
+    - {framework: NIST, control_id: "AU-2", control_title: "Event Logging"}
+    - {framework: STIG, control_id: "NET0405", control_title: "Logging must be enabled"}
+    - {framework: ISO, control_id: "A.8.15", control_title: "Logging"}
+
+- rule_id: NTP-CONFIG-001
+  title: NTP Configured
+  category: NTP
+  severity: MEDIUM
+  target_field: ntp.configured
+  operator: is_true
+  expected_value: "true"
+  on_missing: FAIL
+  description: A trusted NTP source must be configured for accurate time.
+  security_impact: Incorrect time breaks log correlation and certificate validation.
+  remediation_intent: configure_ntp
+  mappings:
+    - {framework: CIS, control_id: "CIS 2.4.1", control_title: "Configure trusted NTP"}
+    - {framework: NIST, control_id: "AU-8", control_title: "Time Stamps"}
+    - {framework: STIG, control_id: "NET0813", control_title: "Authenticated NTP required"}
+    - {framework: ISO, control_id: "A.8.17", control_title: "Clock synchronization"}
+
+- rule_id: NTP-VALID-001
+  title: NTP Server Address Valid
+  category: NTP
+  severity: LOW
+  target_field: ntp.valid_server
+  operator: is_true
+  expected_value: "true"
+  on_missing: "N/A"
+  description: The configured NTP server must be a valid, reachable address.
+  security_impact: An invalid NTP server (e.g. 0.0.0.0) leaves the clock unsynchronized.
+  remediation_intent: configure_ntp
+  mappings:
+    - {framework: CIS, control_id: "CIS 2.4.2", control_title: "Valid NTP server"}
+    - {framework: NIST, control_id: "AU-8", control_title: "Time Stamps"}
+    - {framework: STIG, control_id: "NET0814", control_title: "NTP source valid"}
+    - {framework: ISO, control_id: "A.8.17", control_title: "Clock synchronization"}
+
+- rule_id: AAA-ENABLED-001
+  title: Centralized AAA Enabled
+  category: AUTHENTICATION
+  severity: HIGH
+  target_field: authentication.aaa.enabled
+  operator: is_true
+  expected_value: "true"
+  on_missing: FAIL
+  description: Centralized AAA (TACACS+/RADIUS) should be enabled.
+  security_impact: Without AAA there is no centralized authN/authZ or command accounting.
+  remediation_intent: enable_aaa
+  mappings:
+    - {framework: CIS, control_id: "CIS 1.1.1", control_title: "Enable AAA"}
+    - {framework: NIST, control_id: "AC-2", control_title: "Account Management"}
+    - {framework: STIG, control_id: "NET1623", control_title: "AAA services required"}
+    - {framework: ISO, control_id: "A.5.15", control_title: "Access control"}
+
+- rule_id: PWD-ENCRYPT-001
+  title: Password Encryption Service Enabled
+  category: PASSWORD_SECURITY
+  severity: MEDIUM
+  target_field: password_security.service_encryption
+  operator: is_true
+  expected_value: "true"
+  on_missing: FAIL
+  description: Stored passwords must be encrypted in the configuration.
+  security_impact: Cleartext passwords can be exposed via backups or unauthorized access.
+  remediation_intent: password_encryption
+  mappings:
+    - {framework: CIS, control_id: "CIS 1.4.1", control_title: "Encrypt stored passwords"}
+    - {framework: NIST, control_id: "IA-5(1)", control_title: "Password-based Authentication"}
+    - {framework: STIG, control_id: "NET1653", control_title: "Password encryption required"}
+    - {framework: ISO, control_id: "A.5.17", control_title: "Authentication information"}
+
+- rule_id: ACL-PERMIT-ANY-001
+  title: No Permit-Any Access Rule
+  category: ACL_FIREWALL
+  severity: HIGH
+  target_field: access_control.permit_any
+  operator: is_false
+  expected_value: "false"
+  on_missing: PASS
+  description: Access rules must follow least privilege; no permit-any.
+  security_impact: A permit-any rule provides no filtering and defeats access control.
+  remediation_intent: restrict_acl
+  mappings:
+    - {framework: CIS, control_id: "CIS 3.3.1", control_title: "Apply least-privilege ACLs"}
+    - {framework: NIST, control_id: "AC-4", control_title: "Information Flow Enforcement"}
+    - {framework: STIG, control_id: "NET0966", control_title: "Permit-any prohibited"}
+    - {framework: ISO, control_id: "A.8.20", control_title: "Network security controls"}
+
+- rule_id: MGMT-WAN-001
+  title: Management Not Exposed on WAN
+  category: MANAGEMENT_ACCESS
+  severity: CRITICAL
+  target_field: management_access.wan_exposed
+  operator: is_false
+  expected_value: "false"
+  on_missing: PASS
+  description: Management services must not be reachable from untrusted interfaces.
+  security_impact: Exposing management on the WAN invites brute-force and exploitation.
+  remediation_intent: restrict_mgmt
+  mappings:
+    - {framework: CIS, control_id: "CIS 2.1.1", control_title: "Restrict management access"}
+    - {framework: NIST, control_id: "AC-17", control_title: "Remote Access"}
+    - {framework: STIG, control_id: "FGFW-ND-000125", control_title: "Restrict management plane"}
+    - {framework: ISO, control_id: "A.8.20", control_title: "Network security controls"}
+
+- rule_id: SESSION-CONSOLE-001
+  title: Console Idle Timeout Enforced
+  category: SESSION_MANAGEMENT
+  severity: LOW
+  target_field: session_management.console.exec_timeout
+  operator: not_equals
+  expected_value: "0 0"
+  on_missing: "N/A"
+  description: Console sessions must time out when idle.
+  security_impact: Unattended sessions left open enable unauthorized console access.
+  remediation_intent: session_timeout
+  mappings:
+    - {framework: CIS, control_id: "CIS 1.6.1", control_title: "Set session timeout"}
+    - {framework: NIST, control_id: "AC-12", control_title: "Session Termination"}
+    - {framework: STIG, control_id: "NET1639", control_title: "Idle timeout required"}
+    - {framework: ISO, control_id: "A.8.5", control_title: "Secure authentication"}

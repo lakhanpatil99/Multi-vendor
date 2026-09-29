@@ -14,7 +14,8 @@ import { useAsync } from "@/hooks/use-async";
 import { formatDateTime } from "@/lib/utils";
 import { scoreTone } from "@/constants/severity";
 import { PageHeader } from "@/components/shared/page-header";
-import { EmptyState, LoadingState } from "@/components/shared/states";
+import { EmptyState, ErrorState, LoadingState } from "@/components/shared/states";
+import { friendlyMessage } from "@/lib/api/errors";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { ReportCategory, ReportStatus } from "@/types";
@@ -28,29 +29,37 @@ const CATEGORY_LABEL: Record<ReportCategory, string> = {
 };
 
 export default function ReportsPage() {
-  const { data: reports, loading, reload } = useAsync(
+  const { data: reports, loading, error, reload } = useAsync(
     () => services.reports.list(),
     []
   );
   const [generating, setGenerating] = React.useState(false);
+  const [genError, setGenError] = React.useState<string | null>(null);
 
   async function quickGenerate() {
     setGenerating(true);
-    await services.reports.generate({
-      title: "Fleet Compliance Report",
-      category: "COMPLIANCE",
-      format: "PDF",
-      deviceIds: ["dev-core-rtr-01"],
-    });
-    setGenerating(false);
-    reload();
+    setGenError(null);
+    try {
+      // Empty deviceIds → backend covers all devices in the organization.
+      await services.reports.generate({
+        title: "Fleet Compliance Report",
+        category: "COMPLIANCE",
+        format: "PDF",
+        deviceIds: [],
+      });
+      reload();
+    } catch (err) {
+      setGenError(friendlyMessage(err));
+    } finally {
+      setGenerating(false);
+    }
   }
 
   return (
     <>
       <PageHeader
         title="Reporting Center"
-        description="Generate audit-ready PDF and Excel reports. Phase 1 renders structured previews; binary generation arrives with the backend."
+        description="Generate audit-ready PDF and Excel reports from real analysis results."
         icon={FileBarChart}
         accent="#8b5cf6"
         actions={
@@ -59,6 +68,12 @@ export default function ReportsPage() {
           </Button>
         }
       />
+
+      {genError && (
+        <div className="rounded-lg border border-critical/30 bg-critical/5 p-3 text-sm text-critical">
+          {genError}
+        </div>
+      )}
 
       {/* Report categories */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
@@ -72,6 +87,8 @@ export default function ReportsPage() {
 
       {loading ? (
         <LoadingState />
+      ) : error ? (
+        <ErrorState description={error} onRetry={reload} />
       ) : !reports || reports.length === 0 ? (
         <EmptyState
           icon={FileBarChart}

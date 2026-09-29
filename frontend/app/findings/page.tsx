@@ -16,7 +16,7 @@ import {
   CategoryBadge,
   FrameworkBadge,
 } from "@/components/shared/badges";
-import { EmptyState, LoadingState } from "@/components/shared/states";
+import { EmptyState, ErrorState, LoadingState } from "@/components/shared/states";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
@@ -40,7 +40,7 @@ function FindingsInner() {
   const [status, setStatus] = React.useState("all");
   const [category, setCategory] = React.useState(initialCategory);
 
-  const { data: findings, loading } = useAsync(
+  const { data: findings, loading, error, reload } = useAsync(
     () =>
       services.findings.list({
         search,
@@ -85,6 +85,8 @@ function FindingsInner() {
 
       {loading ? (
         <LoadingState />
+      ) : error ? (
+        <ErrorState description={error} onRetry={reload} />
       ) : !findings || findings.length === 0 ? (
         <EmptyState
           icon={ShieldCheck}

@@ -306,7 +306,7 @@ function ReviewPanel({
           <p className="text-xs text-muted-foreground">
             Approving maps this pattern to <b>{field}</b> under{" "}
             <b>{CONTROL_CATEGORY_META[category].label}</b> and adds it to the
-            knowledge base (simulated in Phase 1).
+            learned knowledge base.
           </p>
         </CardContent>
       </Card>
